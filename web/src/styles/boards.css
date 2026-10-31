@@ -166,6 +166,8 @@
 .drag-ghost .ghost-list { width: 100%; box-shadow: 0 14px 30px -8px rgba(0,0,0,.35); opacity: .95; }
 .is-dragging, .is-dragging * { cursor: grabbing !important; user-select: none; }
 .lists.dragging { scroll-snap-type: none !important; }
+/* The pressed card or list stays in the page while its copy follows the finger (touch events keep going to it). */
+.drag-src { display: none !important; }
 
 /* side panel (activity) */
 .side-panel { width: 320px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; min-height: 0; }

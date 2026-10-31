@@ -126,6 +126,7 @@ export default function BoardPage() {
   const ghost = useRef<HTMLDivElement>(null)
   const raf = useRef<number | null>(null)
   const suppressClick = useRef(0)
+  const edgeStep = useRef(0)
 
   const positionGhost = () => {
     const p = ptr.current
@@ -161,8 +162,20 @@ export default function BoardPage() {
     const r = scroller.current.getBoundingClientRect()
     const edge = 60, speed = 14
     let moved = false
-    if (p.x < r.left + edge) { scroller.current.scrollLeft -= speed * (1 - Math.max(0, p.x - r.left) / edge); moved = true }
-    else if (p.x > r.right - edge) { scroller.current.scrollLeft += speed * (1 - Math.max(0, r.right - p.x) / edge); moved = true }
+    const dir = p.x < r.left + edge ? -1 : p.x > r.right - edge ? 1 : 0
+    if (dir && window.innerWidth <= 767) {
+      // Phones show one list at a time: step to the next list, then pause so you can aim.
+      const now = Date.now()
+      if (!edgeStep.current) edgeStep.current = now - 750 // first step after a short pause at the edge
+      if (now - edgeStep.current > 1000) {
+        edgeStep.current = now
+        const col = scroller.current.querySelector<HTMLElement>('[data-list-col]')
+        scroller.current.scrollBy({ left: dir * ((col?.offsetWidth || r.width) + 10), behavior: 'smooth' })
+        window.setTimeout(computeTarget, 350)
+      }
+    } else if (dir < 0) { scroller.current.scrollLeft -= speed * (1 - Math.max(0, p.x - r.left) / edge); moved = true }
+    else if (dir > 0) { scroller.current.scrollLeft += speed * (1 - Math.max(0, r.right - p.x) / edge); moved = true }
+    if (!dir) edgeStep.current = 0
     if (dragRef.current.kind === 'card') {
       for (const body of scroller.current.querySelectorAll<HTMLElement>('.lc-cards')) {
         const b = body.getBoundingClientRect()
@@ -195,39 +208,74 @@ export default function BoardPage() {
     requestAnimationFrame(positionGhost)
     if (!raf.current) raf.current = requestAnimationFrame(autoScroll)
   }
+  // Mouse: pointer events on the window. Touch: touch events on the pressed element itself — they keep
+  // arriving there for the whole gesture (pointer events get cancelled as soon as the browser starts
+  // to scroll), and preventing them once the drag has started is what stops the page from scrolling.
+  const moveTo = (x: number, y: number) => {
+    const p = ptr.current
+    if (!p) return
+    p.x = x; p.y = y
+    if (!p.started) {
+      const dist = Math.hypot(p.x - p.sx, p.y - p.sy)
+      if (p.touch) { if (dist > 8) { if (p.timer) clearTimeout(p.timer); ptr.current = null } return }
+      if (dist < 5) return
+      start()
+    }
+    positionGhost()
+    computeTarget()
+  }
+  const finish = (cancel: boolean) => {
+    const p = ptr.current
+    if (!p) return
+    if (p.timer) clearTimeout(p.timer)
+    ptr.current = null
+    if (raf.current) { cancelAnimationFrame(raf.current); raf.current = null }
+    const d = dragRef.current
+    if (!p.started || !d) return
+    suppressClick.current = Date.now()
+    if (cancel) { setDrag(null); return }
+    drop(d)
+  }
+  const finishRef = useRef(finish)
+  finishRef.current = finish
+  const moveRef = useRef(moveTo)
+  moveRef.current = moveTo
   const onPointerDown = (e: React.PointerEvent, kind: 'card' | 'list', itemId: number) => {
     if (!canEdit || e.button > 0 || ptr.current) return
     if ((e.target as HTMLElement).closest('button, input, textarea, a, [data-no-drag]') && kind === 'list') return
     const touch = e.pointerType !== 'mouse'
-    ptr.current = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, offX: 0, offY: 0, started: false, timer: null, kind, id: itemId, el: e.currentTarget as HTMLElement, pid: e.pointerId, touch }
-    if (touch) ptr.current.timer = window.setTimeout(() => { if (ptr.current && !ptr.current.started) start() }, 320)
+    const el = e.currentTarget as HTMLElement
+    ptr.current = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, offX: 0, offY: 0, started: false, timer: null, kind, id: itemId, el, pid: e.pointerId, touch }
+    if (!touch) return
+    ptr.current.timer = window.setTimeout(() => { if (ptr.current && !ptr.current.started) start() }, 320)
+    const tmove = (te: TouchEvent) => {
+      const t = te.touches[0]
+      if (!t) return
+      if (ptr.current?.started) te.preventDefault()
+      moveRef.current(t.clientX, t.clientY)
+    }
+    const tend = (te: TouchEvent) => {
+      el.removeEventListener('touchmove', tmove)
+      el.removeEventListener('touchend', tend)
+      el.removeEventListener('touchcancel', tend)
+      finishRef.current(te.type === 'touchcancel')
+    }
+    el.addEventListener('touchmove', tmove, { passive: false })
+    el.addEventListener('touchend', tend)
+    el.addEventListener('touchcancel', tend)
   }
   useEffect(() => {
     const move = (e: PointerEvent) => {
       const p = ptr.current
-      if (!p || e.pointerId !== p.pid) return
-      p.x = e.clientX; p.y = e.clientY
-      if (!p.started) {
-        const dist = Math.hypot(p.x - p.sx, p.y - p.sy)
-        if (p.touch) { if (dist > 8) { if (p.timer) clearTimeout(p.timer); ptr.current = null } return }
-        if (dist < 5) return
-        start()
-      }
-      positionGhost()
-      computeTarget()
+      if (!p || p.touch || e.pointerId !== p.pid) return
+      moveTo(e.clientX, e.clientY)
     }
     const end = (e: PointerEvent) => {
       const p = ptr.current
-      if (!p || e.pointerId !== p.pid) return
-      if (p.timer) clearTimeout(p.timer)
-      ptr.current = null
-      if (raf.current) { cancelAnimationFrame(raf.current); raf.current = null }
-      const d = dragRef.current
-      if (!p.started || !d) return
-      suppressClick.current = Date.now()
-      if (e.type === 'pointercancel') { setDrag(null); return }
-      drop(d)
+      if (!p || p.touch || e.pointerId !== p.pid) return
+      finish(e.type === 'pointercancel')
     }
+    // Belt and braces: no page scrolling at all while something is being dragged.
     const block = (e: TouchEvent) => { if (dragRef.current) e.preventDefault() }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', end)
@@ -296,13 +344,16 @@ export default function BoardPage() {
       {filterOpen && <FilterBar filter={filter} setFilter={setFilter} labels={labels} members={members} inputRef={filterInput} onClose={() => { setFilterOpen(false); setFilter(emptyFilter(settings?.show_done_cards === false)) }} />}
       <div className="board-body">
         <div className={`lists ${drag ? 'dragging' : ''}`} ref={scroller}>
-          {shownLists.map((l, i) => (
+          {lists.map(l => {
+            const src = drag?.kind === 'list' && drag.id === l.id
+            const i = src ? -1 : shownLists.indexOf(l)
+            return (
             <React.Fragment key={l.id}>
               {drag?.kind === 'list' && drag.index === i && <div className="list-col placeholder" style={{ height: drag.h }} />}
-              <ListColumn list={l} labels={labels} members={members} canEdit={canEdit} visible={visible} drag={drag} composer={composer === l.id}
+              <ListColumn list={l} labels={labels} members={members} canEdit={canEdit} visible={visible} drag={drag} composer={composer === l.id} hidden={src}
                 onComposer={open => setComposer(open ? l.id : null)} onOpen={openCard} onPointerDown={onPointerDown} onChanged={changed} />
             </React.Fragment>
-          ))}
+          )})}
           {drag?.kind === 'list' && drag.index >= shownLists.length && <div className="list-col placeholder" style={{ height: drag.h }} />}
           {canEdit && <AddList boardId={id} onAdded={changed} />}
           {lists.length === 0 && !canEdit && <p className="muted">This board has no lists yet.</p>}
@@ -406,8 +457,8 @@ function FilterBar({ filter, setFilter, labels, members, inputRef, onClose }: { 
 
 // ---------------- a list ----------------
 
-function ListColumn({ list, labels, members, canEdit, visible, drag, composer, onComposer, onOpen, onPointerDown, onChanged }: {
-  list: List; labels: Label[]; members: Member[]; canEdit: boolean; visible: (c: Card) => boolean; drag: Drag | null; composer: boolean
+function ListColumn({ list, labels, members, canEdit, visible, drag, composer, hidden, onComposer, onOpen, onPointerDown, onChanged }: {
+  list: List; labels: Label[]; members: Member[]; canEdit: boolean; visible: (c: Card) => boolean; drag: Drag | null; composer: boolean; hidden?: boolean
   onComposer: (open: boolean) => void; onOpen: (c: Card) => void; onPointerDown: (e: React.PointerEvent, kind: 'card' | 'list', id: number) => void; onChanged: () => void
 }) {
   const { toast } = useToast()
@@ -440,7 +491,7 @@ function ListColumn({ list, labels, members, canEdit, visible, drag, composer, o
     { label: 'Delete list', icon: 'trash', danger: true, onSelect: () => setDialog('delete') },
   ]
   return (
-    <div className={`list-col ${list.is_done ? 'is-done' : ''}`} data-list-col={list.id}>
+    <div className={`list-col ${list.is_done ? 'is-done' : ''} ${hidden ? 'drag-src' : ''}`} data-list-col={hidden ? undefined : list.id}>
       <div className={`lc-head ${canEdit ? 'grab' : ''}`} onPointerDown={e => onPointerDown(e, 'list', list.id)}>
         {editing ? <input className="lc-title-in" value={title} autoFocus onChange={e => setTitle(e.target.value)} onBlur={saveTitle} onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') { setTitle(list.title); setEditing(false) } }} maxLength={120} data-no-drag />
           : <span className="lc-title" onDoubleClick={() => canEdit && setEditing(true)}>{list.title}</span>}
@@ -450,15 +501,18 @@ function ListColumn({ list, labels, members, canEdit, visible, drag, composer, o
         {menu && <Menu anchor={menu} align="right" items={items} onClose={() => setMenu(null)} width={220} />}
       </div>
       <div className="lc-cards">
-        {shown.map((c, i) => (
+        {cards.map(c => {
+          const src = drag?.kind === 'card' && drag.id === c.id
+          const i = src ? -1 : shown.indexOf(c)
+          return (
           <React.Fragment key={c.id}>
             {placeholderAt === i && <div className="card-ph" style={{ height: drag!.h }} />}
-            <div className={`cardface ${canEdit ? 'grab' : ''} ${c.done ? 'is-done' : ''}`} data-card-id={c.id} role="button" tabIndex={0}
+            <div className={`cardface ${canEdit ? 'grab' : ''} ${c.done ? 'is-done' : ''} ${src ? 'drag-src' : ''}`} data-card-id={src ? undefined : c.id} role="button" tabIndex={0}
               onPointerDown={e => onPointerDown(e, 'card', c.id)} onContextMenu={e => { if (canEdit && (e.nativeEvent as PointerEvent).pointerType !== 'mouse') e.preventDefault() }} onClick={() => onOpen(c)} onKeyDown={e => { if (e.key === 'Enter') onOpen(c) }}>
               <CardFace card={c} labels={labels} members={members} compact={false} dense={false} />
             </div>
           </React.Fragment>
-        ))}
+        )})}
         {placeholderAt >= shown.length && <div className="card-ph" style={{ height: drag!.h }} />}
         {all.length > 0 && cards.length === 0 && placeholderAt < 0 && <p className="lc-hidden">{all.length} hidden by the filter</p>}
       </div>
