@@ -1,0 +1,36 @@
+{
+  "id": "5f1a",
+  "name": "Garden",
+  "desc": "Things for the garden",
+  "prefs": {"backgroundColor": "#519839", "background": "green"},
+  "labels": [
+    {"id": "l1", "name": "Urgent", "color": "red"},
+    {"id": "l2", "name": "", "color": "green_dark"},
+    {"id": "l3", "name": "Someday", "color": null}
+  ],
+  "lists": [
+    {"id": "L1", "name": "To do", "closed": false, "pos": 1024},
+    {"id": "L2", "name": "Done", "closed": false, "pos": 4096},
+    {"id": "L3", "name": "Old stuff", "closed": true, "pos": 2048}
+  ],
+  "cards": [
+    {"id": "c1", "name": "Plant tomatoes", "desc": "In the sunny bed", "closed": false, "idList": "L1", "pos": 2, "due": "2026-05-01T16:00:00.000Z", "dueComplete": false,
+     "idLabels": ["l1", "l2"], "dateLastActivity": "2026-04-20T10:00:00.000Z", "cover": {"color": "pink"}, "idChecklists": ["k1"],
+     "attachments": [{"name": "Guide", "url": "https://example.com/tomatoes"}]},
+    {"id": "c2", "name": "Buy soil", "desc": "", "closed": false, "idList": "L1", "pos": 1, "due": null, "dueComplete": false, "idLabels": [], "dateLastActivity": "2026-04-19T10:00:00.000Z", "cover": {"color": null}},
+    {"id": "c3", "name": "Fix the fence", "desc": "", "closed": false, "idList": "L2", "pos": 1, "due": "2026-03-01T10:00:00.000Z", "dueComplete": true, "idLabels": ["l3"], "dateLastActivity": "2026-03-02T10:00:00.000Z", "cover": {}},
+    {"id": "c4", "name": "Old card", "desc": "", "closed": true, "idList": "L1", "pos": 3, "idLabels": [], "dateLastActivity": "2026-01-01T10:00:00.000Z", "cover": {}},
+    {"id": "c5", "name": "On a closed list", "desc": "", "closed": false, "idList": "L3", "pos": 1, "idLabels": [], "dateLastActivity": "2026-01-01T10:00:00.000Z", "cover": {}}
+  ],
+  "checklists": [
+    {"id": "k1", "idCard": "c1", "name": "Steps", "pos": 1, "checkItems": [
+      {"name": "Dig", "state": "complete", "pos": 1},
+      {"name": "Water", "state": "incomplete", "pos": 2}
+    ]}
+  ],
+  "actions": [
+    {"id": "a2", "type": "commentCard", "date": "2026-04-21T10:00:00.000Z", "data": {"text": "Done digging", "card": {"id": "c1"}}, "memberCreator": {"fullName": "Alice", "username": "alice"}},
+    {"id": "a1", "type": "commentCard", "date": "2026-04-20T10:00:00.000Z", "data": {"text": "Which variety?", "card": {"id": "c1"}}, "memberCreator": {"fullName": "Tom Green", "username": "tom"}},
+    {"id": "a0", "type": "updateCard", "date": "2026-04-19T10:00:00.000Z", "data": {"card": {"id": "c2"}}, "memberCreator": {"fullName": "Alice"}}
+  ]
+}

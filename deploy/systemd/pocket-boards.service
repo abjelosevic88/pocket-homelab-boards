@@ -1,0 +1,23 @@
+[Unit]
+Description=Pocket Boards — boards, lists and cards
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-boards
+Group=pocket-boards
+ExecStart=/usr/local/bin/pocket-boards
+Environment=DATA_DIR=/var/lib/pocket-boards
+Environment=PORT=8080
+Environment=BASE_URL=https://boards.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-boards
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
