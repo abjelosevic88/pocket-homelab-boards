@@ -157,6 +157,9 @@ kbd { font-family: var(--font); font-size: 11px; font-weight: 550; min-width: 18
 .btn:disabled { opacity: .5; cursor: default; }
 .btn.primary { background: var(--accent); border-color: transparent; color: #fff; box-shadow: 0 1px 2px rgba(12, 102, 228, .3), inset 0 1px 0 rgba(255, 255, 255, .12); }
 .btn.primary:hover { background: var(--accent-hover); }
+/* The dark accent is a light blue for text and rings; white on it is too faint, so filled buttons keep the deeper blue. */
+[data-theme="dark"] .btn.primary { background: #0c66e4; }
+[data-theme="dark"] .btn.primary:hover { background: #1d7af2; }
 .btn.danger { background: var(--danger); border-color: transparent; color: #fff; }
 .btn.danger:hover { filter: brightness(1.06); }
 .btn.danger-ghost { color: var(--danger); }

@@ -2,7 +2,7 @@
 .grid { display: grid; }
 .xsmall { font-size: 11.5px; }
 .spacer { flex: 1; }
-.block { display: block; width: 100%; }
+.block:not(.btn) { display: block; width: 100%; }
 .mt { margin-top: 10px; }
 .mb { margin-bottom: 8px; }
 .ok { color: var(--success); } .bad { color: var(--danger); }
