@@ -7,7 +7,6 @@
 .mb { margin-bottom: 8px; }
 .ok { color: var(--success); } .bad { color: var(--danger); }
 .link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-ink); cursor: pointer; text-align: left; }
-.link-btn:hover { text-decoration: underline; }
 .link-btn:disabled { color: inherit; cursor: default; text-decoration: none; }
 .fab { box-shadow: 0 10px 24px -6px rgba(12, 102, 228, .55), 0 2px 6px rgba(0, 0, 0, .15); }
 .set-section-head .set-app-ico { background: var(--accent-soft); color: var(--accent-ink); }
