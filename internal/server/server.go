@@ -234,6 +234,7 @@ func (s *Server) registerWithCore(ctx context.Context) error {
 		Publishes: eventTopics,
 		Offers:    linkOffers,
 		Uses:      append(linkUses(), core.InferenceUse()),
+		Portable:  portable,
 		Services:  []core.ServiceUse{{Type: "nextcloud", Reason: "Import your Nextcloud Deck boards"}},
 	}
 	if s.cfg.BaseURL != "" {

@@ -29,8 +29,15 @@ type bapp struct {
 
 func newBoardsApp(t *testing.T) *bapp {
 	t.Helper()
+	return newBoardsAppWith(t, "")
+}
+
+// newBoardsAppWith starts Boards, talking to a (fake) Pocket Core at coreURL when set.
+func newBoardsAppWith(t *testing.T, coreURL string) *bapp {
+	t.Helper()
 	cfg := testConfig(t.TempDir())
 	cfg.BaseURL = "http://boards.test"
+	cfg.CoreURL = coreURL
 	cfg.MaxBodyBytes = 64 << 20
 	st := openTestStore(t, cfg)
 	ctx := context.Background()

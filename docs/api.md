@@ -109,6 +109,9 @@ Moving a card into a done list marks it done; moving it out marks it not done. M
 | GET | `/export.json` | every board you own, with lists, cards, labels, comments |
 | GET | `/export.csv` | one row per card |
 | POST | `/import` | an `export.json` (idempotent) |
+| GET | `/pocket/portable` | what Pocket Move can copy out (`export.json`, `export.csv`, link scope `move:export`) and bring in (`/import`, `/import/trello`, `move:import`) |
+
+Pocket Move can copy your boards out and bring boards in (from another box or Trello); a second run adds nothing.
 
 ## Overlay for other apps (`boards:read`)
 
